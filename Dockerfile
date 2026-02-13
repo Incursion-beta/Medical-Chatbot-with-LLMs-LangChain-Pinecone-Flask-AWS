@@ -4,14 +4,12 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-COPY requirements.txt /app/requirements.txt
-
-# Exclude editable install entry to reduce build overhead in containers.
+COPY requirements-docker.txt /app/requirements-docker.txt
 RUN pip install --upgrade pip && \
-    grep -v "^-e \\\.$" requirements.txt > /tmp/requirements-docker.txt && \
-    pip install --no-cache-dir -r /tmp/requirements-docker.txt
+    pip install --no-cache-dir -r /app/requirements-docker.txt
 
 COPY . /app
 
