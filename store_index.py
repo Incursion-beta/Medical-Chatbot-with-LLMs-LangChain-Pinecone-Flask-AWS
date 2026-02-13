@@ -40,7 +40,7 @@ if not pc.has_index(index_name):
         # Previous dimension (all-MiniLM-L6-v2): 384
         dimension=1024,  # Current dimension for BAAI/bge-large-en-v1.5
         metric="cosine",
-        spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+        spec=ServerlessSpec(cloud="aws", region="us-east-2"),
     )
 
 texts = [d.page_content for d in texts_chunk]
