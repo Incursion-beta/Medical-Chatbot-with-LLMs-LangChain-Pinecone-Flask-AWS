@@ -34,7 +34,7 @@ jobs:
           df -h
 
       - name: Build Docker image
-        run: docker build --pull --no-cache -t medbot:ci .
+        run: docker build --pull --no-cache -t medibot:ci .
 
   cd:
     name: Publish Docker Image (AWS ECR)
