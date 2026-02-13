@@ -3,16 +3,13 @@ import time
 import json
 from pathlib import Path
 from typing import Optional
+
 from urllib import request as urlrequest
 
 from dotenv import load_dotenv
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
-# Optional CBM imports (commented out intentionally):
-# from langchain.memory import ConversationBufferMemory
-# from langchain_core.runnables.history import RunnableWithMessageHistory
-# from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_pinecone import PineconeVectorStore
@@ -40,16 +37,12 @@ if not OPENROUTER_API_KEY:
 embedding = download_embeddings()
 
 index_name = "medical-chatbot"
-# Embed each chunk and upsert the embeddings into your Pinecone index.
 docsearch = PineconeVectorStore.from_existing_index(
     index_name=index_name,
     embedding=embedding
 )
 
-
-
-
-retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k":3})
+retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k": 3})
 
 FALLBACK_MODELS = [
     "meta-llama/llama-3.3-70b-instruct:free",
@@ -81,8 +74,6 @@ def discover_openrouter_free_models(limit: int = 12) -> list[str]:
 
 def build_chat_model(model_name: str) -> ChatOpenAI:
     return ChatOpenAI(
-        # Requested invalid model kept for reference:
-        # model="meta-llama/llama-3.2-70b-instruct:free",
         model=model_name,
         base_url="https://openrouter.ai/api/v1",
         api_key=OPENROUTER_API_KEY,
@@ -93,32 +84,32 @@ def build_chat_model(model_name: str) -> ChatOpenAI:
         temperature=0.1,
     )
 
+
 prompt = ChatPromptTemplate.from_messages(
     [
         ("system", system_prompt),
-        # Optional CBM placeholder (enable when memory is enabled):
-        # ("placeholder", "{chat_history}"),
         ("human", "{input}"),
     ]
 )
 
-# Optional Conversation Buffer Memory (CBM) scaffold:
-# _session_histories: dict[str, ChatMessageHistory] = {}
-#
-# def get_session_history(session_id: str) -> ChatMessageHistory:
-#     if session_id not in _session_histories:
-#         _session_histories[session_id] = ChatMessageHistory()
-#     return _session_histories[session_id]
-#
-# To use CBM, wrap your chain with:
-# rag_chain_with_memory = RunnableWithMessageHistory(
-#     active_rag_chain,
-#     get_session_history,
-#     input_messages_key="input",
-#     history_messages_key="chat_history",
-# )
 
-def invoke_with_model_failover(user_input: str) -> Optional[str]:
+def _extract_sources(response: dict) -> list[str]:
+    """Extract unique source names from the RAG response context documents."""
+    sources = []
+    seen = set()
+    for doc in response.get("context", []):
+        src = doc.metadata.get("source", "")
+        if src:
+            # Show just the filename, not the full path
+            name = Path(src).name
+            if name not in seen:
+                seen.add(name)
+                sources.append(name)
+    return sources
+
+
+def invoke_with_model_failover(user_input: str) -> Optional[dict]:
+    """Try multiple models and return {"answer": ..., "sources": [...]} or None."""
     discovered = discover_openrouter_free_models()
     model_candidates = discovered + [m for m in FALLBACK_MODELS if m not in discovered]
 
@@ -129,36 +120,46 @@ def invoke_with_model_failover(user_input: str) -> Optional[str]:
             active_rag_chain = create_retrieval_chain(retriever, qa_chain)
             response = active_rag_chain.invoke({"input": user_input})
             print(f"Model used: {model_name}")
-            return str(response["answer"])
+            return {
+                "answer": str(response["answer"]),
+                "sources": _extract_sources(response),
+            }
         except Exception as exc:
             print(f"RAG error on model {model_name}: {exc}")
-            # Provider throttling is common on free tiers; short backoff helps.
             if "429" in str(exc):
                 time.sleep(1.2)
             continue
     return None
 
 
-
 @app.route("/")
 def index():
-    return render_template('chat.html')
+    return render_template("chat.html")
 
 
-
-@app.route("/get", methods=["GET", "POST"])
+@app.route("/get", methods=["POST"])
 def chat():
-    msg = request.form["msg"]
-    # Optional: client can send a session id for memory-aware chats.
-    # session_id = request.form.get("session_id", "default")
-    print(msg)
-    answer = invoke_with_model_failover(msg)
-    if answer is not None:
-        print("Response:", answer)
-        return answer
-    return "I am not a doctor. The AI providers are currently busy. Please try again in a minute."
+    msg = request.form.get("msg", "").strip()
+    if not msg:
+        return jsonify({"answer": "Please enter a question.", "sources": []})
+
+    print(f"User: {msg}")
+    result = invoke_with_model_failover(msg)
+
+    if result is not None:
+        print(f"Response: {result['answer']}")
+        return jsonify(result)
+
+    return jsonify({
+        "answer": "I am not a doctor. The AI providers are currently busy. Please try again in a minute.",
+        "sources": [],
+    })
 
 
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"})
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)

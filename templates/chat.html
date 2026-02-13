@@ -1,81 +1,514 @@
-<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
-<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-
 <!DOCTYPE html>
-<html>
-	<head>
-		<title>Chatbot</title>
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-		<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}"/>
-	</head>
-	
-	
-	<body>
-		<div class="container-fluid h-100">
-			<div class="row justify-content-center h-100">		
-				<div class="col-md-8 col-xl-6 chat">
-					<div class="card">
-						<div class="card-header msg_head">
-							<div class="d-flex bd-highlight">
-								<div class="img_cont">
-									<img src="https://cdn-icons-png.flaticon.com/512/387/387569.png" class="rounded-circle user_img">
-									<!-- <img src="https://www.prdistribution.com/spirit/uploads/pressreleases/2019/newsreleases/d83341deb75c4c4f6b113f27b1e42cd8-chatbot-florence-already-helps-thousands-of-patients-to-remember-their-medication.png" class="rounded-circle user_img"> -->
-									<span class="online_icon"></span>
-								</div>
-								<div class="user_info">
-									<span>Medical Chatbot</span>
-									<p>Ask me anything!</p>
-								</div>
-							</div>
-						</div>
-						<div id="messageFormeight" class="card-body msg_card_body">
-							
-							
-						</div>
-						<div class="card-footer">
-							<form id="messageArea" class="input-group">
-                                <input type="text" id="text" name="msg" placeholder="Type your message..." autocomplete="off" class="form-control type_msg" required/>
-								<div class="input-group-append">
-									<button type="submit" id="send" class="input-group-text send_btn"><i class="fas fa-location-arrow"></i></button>
-								</div>
-							</form>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		
-		<script>
-			$(document).ready(function() {
-				$("#messageArea").on("submit", function(event) {
-					const date = new Date();
-					const hour = date.getHours();
-					const minute = date.getMinutes();
-					const str_time = hour+":"+minute;
-					var rawText = $("#text").val();
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediBot - Medical Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-heartbeat"></i>
+                    <span>MediBot</span>
+                </div>
+                <button class="sidebar-close" id="sidebarClose" aria-label="Close sidebar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <button class="new-chat-btn" id="newChatBtn">
+                <i class="fas fa-plus"></i>
+                New Conversation
+            </button>
+            <div class="sidebar-section">
+                <h3>Conversation History</h3>
+                <div class="chat-history-list" id="chatHistoryList">
+                    <div class="history-empty">
+                        <i class="fas fa-comments"></i>
+                        <p>No conversations yet</p>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <div class="disclaimer-compact">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Not a substitute for professional medical advice</span>
+                </div>
+            </div>
+        </aside>
 
-					var userHtml = '<div class="d-flex justify-content-end mb-4"><div class="msg_cotainer_send">' + rawText + '<span class="msg_time_send">'+ str_time + '</span></div><div class="img_cont_msg"><img src="https://i.ibb.co/d5b84Xw/Untitled-design.png" class="rounded-circle user_img_msg"></div></div>';
-					
-					$("#text").val("");
-					$("#messageFormeight").append(userHtml);
+        <!-- Main Chat Area -->
+        <main class="chat-main">
+            <!-- Top Bar -->
+            <header class="chat-header">
+                <button class="menu-btn" id="menuBtn" aria-label="Toggle sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="header-info">
+                    <div class="bot-avatar-sm">
+                        <i class="fas fa-robot"></i>
+                        <span class="status-dot"></span>
+                    </div>
+                    <div class="header-text">
+                        <h1>MediBot</h1>
+                        <span class="status-text" id="statusText">Online</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="action-btn" id="clearChatBtn" title="Clear chat">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                    <button class="action-btn" id="themeToggle" title="Toggle theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </header>
 
-					$.ajax({
-						data: {
-							msg: rawText,	
-						},
-						type: "POST",
-						url: "/get",
-					}).done(function(data) {
-						var botHtml = '<div class="d-flex justify-content-start mb-4"><div class="img_cont_msg"><img src="https://cdn-icons-png.flaticon.com/512/387/387569.png" class="rounded-circle user_img_msg"></div><div class="msg_cotainer">' + data + '<span class="msg_time">' + str_time + '</span></div></div>';
-						$("#messageFormeight").append($.parseHTML(botHtml));
-					});
-					event.preventDefault();
-				});
-			});
-		</script>
-        
-    </body>
+            <!-- Messages Container -->
+            <div class="messages-container" id="messagesContainer">
+                <!-- Welcome Screen -->
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-icon">
+                        <i class="fas fa-stethoscope"></i>
+                    </div>
+                    <h2>Welcome to MediBot</h2>
+                    <p>Your AI-powered medical information assistant. Ask me about symptoms, conditions, medications, and general health topics.</p>
+                    <div class="disclaimer-banner">
+                        <i class="fas fa-info-circle"></i>
+                        <p>I provide general health information only. I am not a doctor. For emergencies, call your local emergency number. Always consult a healthcare professional for medical decisions.</p>
+                    </div>
+                    <div class="quick-actions">
+                        <h3>Try asking about:</h3>
+                        <div class="suggestion-chips">
+                            <button class="chip" data-query="What are the common symptoms of diabetes?">
+                                <i class="fas fa-disease"></i>
+                                Diabetes symptoms
+                            </button>
+                            <button class="chip" data-query="How can I lower my blood pressure naturally?">
+                                <i class="fas fa-heart"></i>
+                                Blood pressure
+                            </button>
+                            <button class="chip" data-query="What are the side effects of common pain relievers?">
+                                <i class="fas fa-pills"></i>
+                                Pain relievers
+                            </button>
+                            <button class="chip" data-query="What is the difference between a cold and the flu?">
+                                <i class="fas fa-virus"></i>
+                                Cold vs Flu
+                            </button>
+                            <button class="chip" data-query="What vitamins are essential for good health?">
+                                <i class="fas fa-capsules"></i>
+                                Essential vitamins
+                            </button>
+                            <button class="chip" data-query="How does vaccination work?">
+                                <i class="fas fa-syringe"></i>
+                                Vaccination
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages will be appended here -->
+                <div class="messages-list" id="messagesList"></div>
+
+                <!-- Typing Indicator -->
+                <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                    <div class="typing-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <form id="messageForm" class="input-form">
+                    <div class="input-wrapper">
+                        <textarea
+                            id="messageInput"
+                            placeholder="Ask a medical question..."
+                            rows="1"
+                            autocomplete="off"
+                            required
+                        ></textarea>
+                        <button type="submit" class="send-btn" id="sendBtn" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <p class="input-hint">Press Enter to send, Shift+Enter for new line</p>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+    (function() {
+        // --- DOM Elements ---
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const messagesList = document.getElementById('messagesList');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const statusText = document.getElementById('statusText');
+        const clearChatBtn = document.getElementById('clearChatBtn');
+        const newChatBtn = document.getElementById('newChatBtn');
+        const themeToggle = document.getElementById('themeToggle');
+        const sidebar = document.getElementById('sidebar');
+        const menuBtn = document.getElementById('menuBtn');
+        const sidebarClose = document.getElementById('sidebarClose');
+        const chatHistoryList = document.getElementById('chatHistoryList');
+        const chips = document.querySelectorAll('.chip');
+
+        // --- State ---
+        let conversations = JSON.parse(localStorage.getItem('medibot_conversations') || '[]');
+        let currentConvId = null;
+        let isProcessing = false;
+
+        // --- Theme ---
+        const savedTheme = localStorage.getItem('medibot_theme') || 'dark';
+        document.body.setAttribute('data-theme', savedTheme);
+        updateThemeIcon();
+
+        themeToggle.addEventListener('click', () => {
+            const current = document.body.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', next);
+            localStorage.setItem('medibot_theme', next);
+            updateThemeIcon();
+        });
+
+        function updateThemeIcon() {
+            const theme = document.body.getAttribute('data-theme');
+            themeToggle.innerHTML = theme === 'dark'
+                ? '<i class="fas fa-sun"></i>'
+                : '<i class="fas fa-moon"></i>';
+        }
+
+        // --- Sidebar ---
+        menuBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
+        sidebarClose.addEventListener('click', () => sidebar.classList.remove('open'));
+        document.addEventListener('click', (e) => {
+            if (sidebar.classList.contains('open') &&
+                !sidebar.contains(e.target) &&
+                !menuBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+
+        // --- Auto-resize textarea ---
+        messageInput.addEventListener('input', () => {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+            sendBtn.disabled = !messageInput.value.trim();
+        });
+
+        // --- Keyboard: Enter to send, Shift+Enter for newline ---
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (messageInput.value.trim() && !isProcessing) {
+                    messageForm.dispatchEvent(new Event('submit', { cancelable: true }));
+                }
+            }
+        });
+
+        // --- Suggestion chips ---
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                const query = chip.getAttribute('data-query');
+                messageInput.value = query;
+                sendBtn.disabled = false;
+                messageForm.dispatchEvent(new Event('submit', { cancelable: true }));
+            });
+        });
+
+        // --- Format time ---
+        function formatTime() {
+            const d = new Date();
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // --- Markdown-lite renderer ---
+        function renderMarkdown(text) {
+            let html = text
+                // Escape HTML first
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                // Bold
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                // Italic
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                // Inline code
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                // Line breaks
+                .replace(/\n/g, '<br>');
+
+            // Simple list handling
+            html = html.replace(/((?:^|\<br\>)[-*]\s.+(?:\<br\>[-*]\s.+)*)/g, (match) => {
+                const items = match.split('<br>').filter(s => s.trim());
+                const lis = items.map(item => '<li>' + item.replace(/^[-*]\s/, '') + '</li>').join('');
+                return '<ul>' + lis + '</ul>';
+            });
+
+            // Numbered lists
+            html = html.replace(/((?:^|\<br\>)\d+\.\s.+(?:\<br\>\d+\.\s.+)*)/g, (match) => {
+                const items = match.split('<br>').filter(s => s.trim());
+                const lis = items.map(item => '<li>' + item.replace(/^\d+\.\s/, '') + '</li>').join('');
+                return '<ol>' + lis + '</ol>';
+            });
+
+            return html;
+        }
+
+        // --- Scroll to bottom ---
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // --- Add message to UI ---
+        function addMessage(text, sender, sources) {
+            welcomeScreen.style.display = 'none';
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}-message`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'msg-avatar';
+            avatar.innerHTML = sender === 'bot'
+                ? '<i class="fas fa-robot"></i>'
+                : '<i class="fas fa-user"></i>';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+
+            const content = document.createElement('div');
+            content.className = 'msg-content';
+            content.innerHTML = sender === 'bot' ? renderMarkdown(text) : text.replace(/\n/g, '<br>');
+
+            const time = document.createElement('span');
+            time.className = 'msg-time';
+            time.textContent = formatTime();
+
+            bubble.appendChild(content);
+
+            // Source citations for bot messages
+            if (sender === 'bot' && sources && sources.length > 0) {
+                const srcDiv = document.createElement('div');
+                srcDiv.className = 'msg-sources';
+                srcDiv.innerHTML = '<span class="sources-label"><i class="fas fa-book-medical"></i> Sources</span>';
+                const srcList = document.createElement('div');
+                srcList.className = 'sources-list';
+                sources.forEach((src, i) => {
+                    const srcItem = document.createElement('span');
+                    srcItem.className = 'source-tag';
+                    srcItem.textContent = src;
+                    srcList.appendChild(srcItem);
+                });
+                srcDiv.appendChild(srcList);
+                bubble.appendChild(srcDiv);
+            }
+
+            bubble.appendChild(time);
+
+            // Copy button for bot messages
+            if (sender === 'bot') {
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                copyBtn.title = 'Copy response';
+                copyBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(text).then(() => {
+                        copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                        setTimeout(() => { copyBtn.innerHTML = '<i class="fas fa-copy"></i>'; }, 1500);
+                    });
+                });
+                bubble.appendChild(copyBtn);
+            }
+
+            msgDiv.appendChild(avatar);
+            msgDiv.appendChild(bubble);
+            messagesList.appendChild(msgDiv);
+
+            requestAnimationFrame(scrollToBottom);
+        }
+
+        // --- Show/hide typing indicator ---
+        function showTyping() {
+            typingIndicator.style.display = 'flex';
+            statusText.textContent = 'Typing...';
+            scrollToBottom();
+        }
+
+        function hideTyping() {
+            typingIndicator.style.display = 'none';
+            statusText.textContent = 'Online';
+        }
+
+        // --- Save conversation ---
+        function saveConversation() {
+            if (!currentConvId) return;
+            const msgs = messagesList.innerHTML;
+            const conv = conversations.find(c => c.id === currentConvId);
+            if (conv) {
+                conv.messages = msgs;
+                conv.updatedAt = Date.now();
+            }
+            localStorage.setItem('medibot_conversations', JSON.stringify(conversations));
+            renderHistory();
+        }
+
+        // --- Start new conversation ---
+        function startNewConversation() {
+            currentConvId = 'conv_' + Date.now();
+            conversations.unshift({
+                id: currentConvId,
+                title: 'New Conversation',
+                messages: '',
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            });
+            messagesList.innerHTML = '';
+            welcomeScreen.style.display = 'flex';
+            localStorage.setItem('medibot_conversations', JSON.stringify(conversations));
+            renderHistory();
+            sidebar.classList.remove('open');
+        }
+
+        // --- Load conversation ---
+        function loadConversation(id) {
+            const conv = conversations.find(c => c.id === id);
+            if (!conv) return;
+            currentConvId = id;
+            messagesList.innerHTML = conv.messages;
+            welcomeScreen.style.display = conv.messages ? 'none' : 'flex';
+            renderHistory();
+            sidebar.classList.remove('open');
+            scrollToBottom();
+        }
+
+        // --- Delete conversation ---
+        function deleteConversation(id, event) {
+            event.stopPropagation();
+            conversations = conversations.filter(c => c.id !== id);
+            localStorage.setItem('medibot_conversations', JSON.stringify(conversations));
+            if (currentConvId === id) {
+                startNewConversation();
+            }
+            renderHistory();
+        }
+
+        // --- Render conversation history ---
+        function renderHistory() {
+            if (conversations.length === 0) {
+                chatHistoryList.innerHTML = `
+                    <div class="history-empty">
+                        <i class="fas fa-comments"></i>
+                        <p>No conversations yet</p>
+                    </div>`;
+                return;
+            }
+            chatHistoryList.innerHTML = conversations.map(conv => {
+                const isActive = conv.id === currentConvId ? 'active' : '';
+                const date = new Date(conv.updatedAt).toLocaleDateString();
+                return `
+                    <div class="history-item ${isActive}" onclick="window._loadConv('${conv.id}')">
+                        <div class="history-item-content">
+                            <i class="fas fa-message"></i>
+                            <span class="history-title">${conv.title}</span>
+                        </div>
+                        <div class="history-item-meta">
+                            <span class="history-date">${date}</span>
+                            <button class="history-delete" onclick="window._deleteConv('${conv.id}', event)" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        // Expose for onclick handlers in rendered HTML
+        window._loadConv = loadConversation;
+        window._deleteConv = deleteConversation;
+
+        // --- Submit message ---
+        messageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+            if (!text || isProcessing) return;
+
+            isProcessing = true;
+            sendBtn.disabled = true;
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            addMessage(text, 'user');
+
+            // Update conversation title from first message
+            const conv = conversations.find(c => c.id === currentConvId);
+            if (conv && conv.title === 'New Conversation') {
+                conv.title = text.substring(0, 40) + (text.length > 40 ? '...' : '');
+                renderHistory();
+            }
+
+            showTyping();
+
+            try {
+                const formData = new FormData();
+                formData.append('msg', text);
+
+                const response = await fetch('/get', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                hideTyping();
+
+                const answer = data.answer || data;
+                const sources = data.sources || [];
+                addMessage(typeof answer === 'string' ? answer : JSON.stringify(answer), 'bot', sources);
+            } catch (err) {
+                hideTyping();
+                addMessage('Sorry, something went wrong. Please try again.', 'bot');
+            }
+
+            saveConversation();
+            isProcessing = false;
+            sendBtn.disabled = false;
+            messageInput.focus();
+        });
+
+        // --- Clear chat ---
+        clearChatBtn.addEventListener('click', () => {
+            if (messagesList.children.length === 0) return;
+            if (confirm('Clear this conversation?')) {
+                messagesList.innerHTML = '';
+                welcomeScreen.style.display = 'flex';
+                saveConversation();
+            }
+        });
+
+        // --- New chat ---
+        newChatBtn.addEventListener('click', startNewConversation);
+
+        // --- Init ---
+        if (conversations.length > 0) {
+            loadConversation(conversations[0].id);
+        } else {
+            startNewConversation();
+        }
+    })();
+    </script>
+</body>
 </html>
