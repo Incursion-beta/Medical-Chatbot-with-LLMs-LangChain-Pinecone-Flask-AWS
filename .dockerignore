@@ -1,0 +1,16 @@
+.git
+.github
+.cursor
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.ipynb
+research
+data
+medical_chatbot.egg-info
+*.log
+*.sqlite3
+.DS_Store
